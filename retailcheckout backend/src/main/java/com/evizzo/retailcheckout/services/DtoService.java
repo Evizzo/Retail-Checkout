@@ -15,14 +15,14 @@ import java.util.stream.Collectors;
 @Service
 @AllArgsConstructor
 public class DtoService {
-
     public ArticleDTO convertToDto(Article article) {
         return ArticleDTO.builder()
                 .articleId(article.getArticleId())
                 .serialNumber(article.getSerialNumber())
                 .articleName(article.getArticleName())
                 .quantity(article.getQuantity())
-                .price(article.getPrice())
+                .pricePerItem(article.getPricePerItem())
+                .fullPrice(article.getFullPrice())
                 .billId(article.getBill() != null ? article.getBill().getId() : null)
                 .build();
     }
@@ -37,6 +37,9 @@ public class DtoService {
                 .date(bill.getDate())
                 .paidBy(bill.getPaidBy())
                 .articles(articleDTOs)
+                .changeGiven(bill.getChangeGiven())
+                .totalPrice(bill.getTotalPrice())
+                .amountGivenToCashier(bill.getAmountGivenToCashier())
                 .userId(bill.getUser() != null ? bill.getUser().getUserId() : null)
                 .build();
     }

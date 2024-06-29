@@ -6,7 +6,7 @@ export interface Article {
   serialNumber: string;
   articleName: string;
   quantity: number;
-  price: number;
+  pricePerItem: number;
 }
 
 interface ArticleTableProps {
@@ -14,6 +14,10 @@ interface ArticleTableProps {
   onEdit: (index: number) => void;
   onDelete: (index: number) => void;
 }
+
+const calculateTotalPrice = (article: Article) => {
+  return (article.quantity * article.pricePerItem).toFixed(2);
+};
 
 const ArticleTable: React.FC<ArticleTableProps> = ({ articles, onEdit, onDelete }) => {
   return (
@@ -24,7 +28,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ articles, onEdit, onDelete 
           <th>Serial Number</th>
           <th>Article Name</th>
           <th>Quantity</th>
-          <th>Price</th>
+          <th>Price per item</th>
+          <th>Total price</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -35,7 +40,8 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ articles, onEdit, onDelete 
             <td>{article.serialNumber}</td>
             <td>{article.articleName}</td>
             <td>{article.quantity}</td>
-            <td>${article.price.toFixed(2)}</td>
+            <td>${article.pricePerItem.toFixed(2)}</td>
+            <td>${calculateTotalPrice(article)}</td>
             <td>
               <Button variant="info" size="sm" onClick={() => onEdit(index)}>Edit</Button>{' '}
               <Button variant="danger" size="sm" onClick={() => onDelete(index)}>Delete</Button>

@@ -1,17 +1,27 @@
-import { useState, ChangeEvent, FormEvent } from 'react';
+import { useState, useEffect, ChangeEvent } from 'react';
 import { Container, Card, Form, Button, InputGroup, FormControl } from 'react-bootstrap';
 import ArticleTable, { Article } from './ArticleTable';
 import { executeSaveBill } from '../api/ApiService';
+import { Link } from 'react-router-dom';
+import { useAuth } from '../api/AuthContex';
 
 function RetailCheckoutPage() {
   const [serialNumber, setSerialNumber] = useState('');
   const [articleName, setArticleName] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [price, setPrice] = useState('');
+  const [totalPrice, setTotalPrice] = useState(0);
   const [articles, setArticles] = useState<Article[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [showPaymentSection, setShowPaymentSection] = useState(false);
   const [paidBy, setPaidBy] = useState<'CASH' | 'CARD' | null>(null);
+  const [amountGivenToCashier, setAmountGivenToCashier] = useState<number | ''>(''); 
+  const [change, setChange] = useState<number | null>(null); 
+  const authContext = useAuth();
+
+  useEffect(() => {
+    calculateTotal();
+  }, [articles]);
 
   const handleSerialNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSerialNumber(e.target.value);
@@ -31,7 +41,7 @@ function RetailCheckoutPage() {
 
   const handleAddArticle = () => {
     if (serialNumber.trim() !== '' && articleName.trim() !== '' && price.trim() !== '') {
-      const newArticle: Article = { serialNumber, articleName: articleName, quantity, price: Number(price) };
+      const newArticle: Article = { serialNumber, articleName: articleName, quantity, pricePerItem: Number(price) };
       if (editIndex !== null) {
         const updatedArticles = [...articles];
         updatedArticles[editIndex] = newArticle;
@@ -52,7 +62,7 @@ function RetailCheckoutPage() {
     setSerialNumber(article.serialNumber);
     setArticleName(article.articleName);
     setQuantity(article.quantity);
-    setPrice(article.price.toString());
+    setPrice(article.pricePerItem.toString());
     setEditIndex(index);
   };
 
@@ -75,6 +85,10 @@ function RetailCheckoutPage() {
     setShowPaymentSection(false);
   };
 
+  const handleAmountGivenChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setAmountGivenToCashier(Number(e.target.value));
+  };
+
   const handlePaymentSubmission = async () => {
     if (!paidBy) {
       alert("Please select a payment method.");
@@ -82,9 +96,12 @@ function RetailCheckoutPage() {
     }
 
     try {
+      console.log(totalPrice);
       const bill = {
         articles,
-        paidBy
+        paidBy,
+        totalPrice,
+        amountGivenToCashier
       };
       const response = await executeSaveBill(bill);
       console.log("Bill saved successfully:", response.data);
@@ -96,30 +113,39 @@ function RetailCheckoutPage() {
       setPrice('');
       setPaidBy(null);
       setShowPaymentSection(false);
+      setAmountGivenToCashier(''); 
+      setChange(null); 
+      setTotalPrice(0);
     } catch (error) {
       console.error("Error saving bill:", error);
     }
   };
 
-  const handleSubmitReceipt = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!paidBy) {
-      alert("Please select a payment method.");
+  const calculateTotal = () => {
+    let total = 0;
+    articles.forEach(article => {
+      const articleTotal = article.pricePerItem * article.quantity;
+      total += articleTotal;
+    });
+    setTotalPrice(total); 
+  };
+
+  const calculateChange = () => {
+    const total = totalPrice; 
+    const givenAmount = typeof amountGivenToCashier === 'number' ? amountGivenToCashier : parseFloat(amountGivenToCashier);
+    
+    if (isNaN(givenAmount)) {
+      alert('Invalid amount given. Please enter a valid number.');
+      setChange(null);
       return;
     }
-    try {
-      const bill = { articles, paidBy };
-      const response = await executeSaveBill(bill);
-      console.log("Bill saved successfully:", response.data);
-      setArticles([]);
-      setSerialNumber('');
-      setArticleName('');
-      setQuantity(1);
-      setPrice('');
-      setPaidBy(null);
-      setShowPaymentSection(false);
-    } catch (error) {
-      console.error("Error saving bill:", error);
+  
+    if (givenAmount >= total) {
+      setChange(givenAmount - total);
+      setAmountGivenToCashier(givenAmount)
+    } else {
+      alert('Amount given is less than the total amount due.');
+      setChange(null);
     }
   };
 
@@ -127,10 +153,14 @@ function RetailCheckoutPage() {
     <div className="d-flex justify-content-center align-items-center vh-100">
       <Card className="bg-light p-4 text-center" style={{ width: '100%', maxWidth: '800px' }}>
         <Container>
-          <h1>Welcome!</h1>
+          <h1>Welcome {authContext.username}!</h1>
+          <Button variant="secondary" type="button" onClick={authContext.logout}>
+              Logout
+            </Button>
           <br />
+          <p>Total: ${totalPrice}</p>
           {!showPaymentSection ? (
-            <Form onSubmit={handleSubmitReceipt}>
+            <Form>
               <Form.Group controlId="formSerialNumber">
                 <Form.Label>Serial Number</Form.Label>
                 <InputGroup className="mb-3">
@@ -162,7 +192,6 @@ function RetailCheckoutPage() {
                     value={quantity}
                     onChange={handleQuantityChange}
                     required
-                    min={1}
                   />
                 </InputGroup>
               </Form.Group>
@@ -188,6 +217,12 @@ function RetailCheckoutPage() {
               <Button variant="primary" type="button" onClick={handleProceedToPayment}>
                 Proceed to Payment
               </Button>
+              <br></br>
+              <Link to="/cashiers-bills">
+                <Button variant="secondary">
+                  View Your Bills
+                </Button>
+              </Link>
             </Form>
           ) : (
             <div>
@@ -211,6 +246,26 @@ function RetailCheckoutPage() {
                 </Form.Group>
               </fieldset>
               <br />
+              {paidBy === 'CASH' && (
+                <div>
+                  <Form.Group controlId="formAmountGiven">
+                    <Form.Label>Amount Given</Form.Label>
+                    <InputGroup className="mb-3">
+                      <FormControl
+                        type="number"
+                        placeholder="Enter amount given"
+                        value={amountGivenToCashier}
+                        onChange={handleAmountGivenChange}
+                      />
+                    </InputGroup>
+                  </Form.Group>
+                  <Button variant="primary" type="button" onClick={calculateChange}>
+                    Calculate Change
+                  </Button>
+                  <br /><br />
+                  {change !== null && <p>Change: ${change.toFixed(2)}</p>}
+                </div>
+              )}
               <Button variant="primary" type="button" onClick={handlePaymentSubmission}>
                 Submit Payment
               </Button>

@@ -26,6 +26,12 @@ public class Bill {
     @Enumerated(EnumType.STRING)
     private PaymentOptions paidBy;
 
+    private Double totalPrice;
+
+    private Double changeGiven;
+
+    private Double amountGivenToCashier;
+
     @OneToMany(mappedBy = "bill")
     private List<Article> articles;
 

@@ -18,6 +18,9 @@ public class BillDTO {
     private UUID id;
     private LocalDateTime date;
     private PaymentOptions paidBy;
+    private Double totalPrice;
+    private Double changeGiven;
+    private Double amountGivenToCashier;
     private List<ArticleDTO> articles;
     private UUID userId;
 }

@@ -24,7 +24,9 @@ public class Article {
 
     private Integer quantity;
 
-    private Double price;
+    private Double pricePerItem;
+
+    private Double fullPrice;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bill_id")

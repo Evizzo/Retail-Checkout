@@ -16,6 +16,7 @@ public class ArticleDTO {
     private String serialNumber;
     private String articleName;
     private Integer quantity;
-    private Double price;
+    private Double pricePerItem;
+    private Double fullPrice;
     private UUID billId;
 }

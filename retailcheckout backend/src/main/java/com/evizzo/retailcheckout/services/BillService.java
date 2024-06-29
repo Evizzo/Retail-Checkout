@@ -5,6 +5,7 @@ import com.evizzo.retailcheckout.dtos.BillDTO;
 import com.evizzo.retailcheckout.entities.Article;
 import com.evizzo.retailcheckout.entities.Bill;
 import com.evizzo.retailcheckout.entities.Person;
+import com.evizzo.retailcheckout.enums.PaymentOptions;
 import com.evizzo.retailcheckout.exceptions.UserNotFoundException;
 import com.evizzo.retailcheckout.repositories.BillRepository;
 import jakarta.servlet.http.HttpServletRequest;
@@ -32,10 +33,18 @@ public class BillService {
         bill.setUser(user);
         bill.setDate(LocalDateTime.now());
 
+        if (bill.getPaidBy() == PaymentOptions.CARD){
+            bill.setChangeGiven(0.0);
+            bill.setAmountGivenToCashier(bill.getTotalPrice());
+        } else {
+            bill.setChangeGiven(bill.getAmountGivenToCashier() - bill.getTotalPrice());
+        }
+
         Bill savedBill = billRepository.save(bill);
 
         List<Article> articles = bill.getArticles();
         for (Article article : articles) {
+            article.setFullPrice(article.getQuantity() * article.getPricePerItem());
             article.setBill(savedBill);
         }
 
@@ -44,7 +53,9 @@ public class BillService {
         return dtoService.convertToDto(savedBill);
     }
 
-    public List<BillDTO> findBillsByUserId(UUID userId){
+    public List<BillDTO> findBillsByUserId(HttpServletRequest request){
+        UUID userId = jwtService.extractUserIdFromToken(request);
+
         List<Bill> bills = billRepository.findByUserUserId(userId);
         return bills.stream()
                 .map(dtoService::convertToDto)

@@ -5,6 +5,7 @@ import {BrowserRouter, Routes, Route, Navigate} from "react-router-dom"
 import RetailCheckoutPage from './ components/RetailCheckoutPage'
 import { ReactNode } from "react";
 import { useAuth } from "./api/AuthContex";
+import CashierBills from './ components/CashierBills'
 
 function App() {
   function AuthenticatedRoute({ children }: { children: ReactNode }) {
@@ -28,6 +29,12 @@ function App() {
             <Route path="/create-bill" element={
               <AuthenticatedRoute>
                 <RetailCheckoutPage />
+              </AuthenticatedRoute>
+            }/>
+
+            <Route path="/cashiers-bills" element={
+              <AuthenticatedRoute>
+                <CashierBills />
               </AuthenticatedRoute>
             }/>
           </Routes>

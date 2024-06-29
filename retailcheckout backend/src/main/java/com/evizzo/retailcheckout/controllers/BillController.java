@@ -12,7 +12,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @AllArgsConstructor
@@ -29,7 +28,7 @@ public class BillController {
 
     @PreAuthorize("hasAuthority('cashier:read')")
     @GetMapping
-    public ResponseEntity<List<BillDTO>> retrieveCashierBills(UUID userId){
-        return ResponseEntity.ok(billService.findBillsByUserId(userId));
+    public ResponseEntity<List<BillDTO>> retrieveCashierBills(HttpServletRequest request){
+        return ResponseEntity.ok(billService.findBillsByUserId(request));
     }
 }
