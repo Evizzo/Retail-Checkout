@@ -67,8 +67,8 @@ public class BillService {
 
     public List<BillDTO> findBillsByUserId(HttpServletRequest request){
         UUID userId = jwtService.extractUserIdFromToken(request);
+        List<Bill> bills = billRepository.findByUserUserIdSorted(userId);
 
-        List<Bill> bills = billRepository.findByUserUserId(userId);
         return bills.stream()
                 .map(dtoService::convertToDto)
                 .collect(Collectors.toList());

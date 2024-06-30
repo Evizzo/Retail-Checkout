@@ -23,11 +23,13 @@ interface BillDTO {
   amountGivenToCashier: number;
   articles: ArticleDTO[];
   userId: string;
+  [key: string]: string | number | ArticleDTO[];
 }
 
 const CashierBills: React.FC = () => {
   const [bills, setBills] = useState<BillDTO[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'ascending' | 'descending' } | null>(null);
   const authContext = useAuth();
 
   useEffect(() => {
@@ -43,6 +45,30 @@ const CashierBills: React.FC = () => {
     fetchBills();
   }, []);
 
+  const sortedBills = React.useMemo(() => {
+    let sortableBills = [...bills];
+    if (sortConfig !== null) {
+      sortableBills.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableBills;
+  }, [bills, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
   return (
     <Container className="mt-5">
       <h1 className="mb-4">{authContext.username} Bills</h1>
@@ -50,17 +76,17 @@ const CashierBills: React.FC = () => {
       <Table striped bordered hover className="custom-table">
         <thead>
           <tr>
-            <th>Bill ID</th>
-            <th>Date</th>
-            <th>Paid By</th>
-            <th>Total Price</th>
-            <th>Change Given</th>
-            <th>Amount Given To Cashier</th>
+            <th onClick={() => requestSort('id')}>Bill ID</th>
+            <th onClick={() => requestSort('date')}>Date</th>
+            <th onClick={() => requestSort('paidBy')}>Paid By</th>
+            <th onClick={() => requestSort('totalPrice')}>Total Price</th>
+            <th onClick={() => requestSort('changeGiven')}>Change Given</th>
+            <th onClick={() => requestSort('amountGivenToCashier')}>Amount Given To Cashier</th>
             <th>Articles</th>
           </tr>
         </thead>
         <tbody>
-          {bills.map((bill) => (
+          {sortedBills.map((bill) => (
             <tr key={bill.id}>
               <td>{bill.id}</td>
               <td>{new Date(bill.date).toLocaleString()}</td>
@@ -81,11 +107,11 @@ const CashierBills: React.FC = () => {
           ))}
         </tbody>
       </Table>
-    <Link to="/create-bill">
+      <Link to="/create-bill">
         <Button variant="secondary">
-            Go to retail checkout
+          Go to retail checkout
         </Button>
-    </Link>
+      </Link>
     </Container>
   );
 };

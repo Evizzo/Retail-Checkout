@@ -230,7 +230,7 @@ function RetailCheckoutPage() {
                   value={articleName}
                   required
                   style={{ width: '23%' }}
-                >aaaaaa
+                >
                   <option value="">Select an article...</option>
                   {availableArticles.map(article => (
                     <option key={article.serialNumber} value={article.articleName}>
