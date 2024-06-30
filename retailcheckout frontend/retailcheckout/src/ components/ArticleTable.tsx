@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { Table, Button } from 'react-bootstrap';
 import '../styles/ArticleTable.css';
 
@@ -26,21 +26,52 @@ const calculateTotalPrice = (article: Article) => {
 };
 
 const ArticleTable: React.FC<ArticleTableProps> = ({ articles, onEdit, onDelete }) => {
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'ascending' | 'descending' } | null>(null);
+
+  const sortedArticles = useMemo(() => {
+    let sortableArticles = [...articles];
+    if (sortConfig !== null) {
+      sortableArticles.sort((a, b) => {
+        const aValue = a[sortConfig.key as keyof Article];
+        const bValue = b[sortConfig.key as keyof Article];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        if (typeof aValue === 'number' && typeof bValue === 'number') {
+          return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+        } else if (typeof aValue === 'string' && typeof bValue === 'string') {
+          return sortConfig.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        }
+        return 0;
+      });
+    }
+    return sortableArticles;
+  }, [articles, sortConfig]);
+
+  const requestSort = (key: string) => {
+    let direction: 'ascending' | 'descending' = 'ascending';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
   return (
     <Table striped bordered hover className="custom-table">
       <thead className="thead-dark">
         <tr>
           <th>#</th>
-          <th>Serial Number</th>
-          <th>Article Name</th>
-          <th>Quantity</th>
-          <th>Price per item</th>
-          <th>Total price</th>
+          <th onClick={() => requestSort('serialNumber')}>Serial Number</th>
+          <th onClick={() => requestSort('articleName')}>Article Name</th>
+          <th onClick={() => requestSort('quantity')}>Quantity</th>
+          <th onClick={() => requestSort('pricePerItem')}>Price per item</th>
+          <th onClick={() => requestSort('quantity')}>Total price</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        {articles.map((article, index) => (
+        {sortedArticles.map((article, index) => (
           <tr key={index}>
             <td>{index + 1}</td>
             <td>{article.serialNumber}</td>
