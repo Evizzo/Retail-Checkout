@@ -35,8 +35,8 @@ public class BillController {
 
     @PreAuthorize("hasAuthority('cashier:read')")
     @GetMapping("/{billId}")
-    public ResponseEntity<BillDTO> findBillById(@PathVariable UUID billId) {
-        return billService.findBillById(billId)
+    public ResponseEntity<BillDTO> findBillById(@PathVariable UUID billId, HttpServletRequest request) {
+        return billService.findBillById(billId, request)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

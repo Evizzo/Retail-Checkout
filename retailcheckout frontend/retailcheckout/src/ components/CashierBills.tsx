@@ -88,7 +88,9 @@ const CashierBills: React.FC = () => {
         <tbody>
           {sortedBills.map((bill) => (
             <tr key={bill.id}>
-              <td>{bill.id}</td>
+              <td>
+                <Link to={`/bill/${bill.id}`}>{bill.id}</Link>
+              </td>
               <td>{new Date(bill.date).toLocaleString()}</td>
               <td>{bill.paidBy}</td>
               <td>{bill.totalPrice.toFixed(2)}</td>

@@ -74,9 +74,21 @@ public class BillService {
                 .collect(Collectors.toList());
     }
 
-    public Optional<BillDTO> findBillById(UUID billId){
+    public Optional<BillDTO> findBillById(UUID billId, HttpServletRequest request) {
         Optional<Bill> billOptional = billRepository.findById(billId);
 
-        return billOptional.map(dtoService::convertToDto);
+        if (!billOptional.isPresent()) {
+            throw new RuntimeException("Bill not found with ID: " + billId);
+        }
+
+        UUID userId = jwtService.extractUserIdFromToken(request);
+        Bill bill = billOptional.get();
+        UUID billUserId = bill.getUser().getUserId();
+
+        if (!billUserId.equals(userId)) {
+            throw new RuntimeException("User does not have permission to access this bill");
+        }
+
+        return Optional.of(dtoService.convertToDto(bill));
     }
 }

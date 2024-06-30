@@ -6,6 +6,7 @@ import RetailCheckoutPage from './ components/RetailCheckoutPage'
 import { ReactNode } from "react";
 import { useAuth } from "./api/AuthContex";
 import CashierBills from './ components/CashierBills'
+import BillDetail from './ components/BillDetail'
 
 function App() {
   function AuthenticatedRoute({ children }: { children: ReactNode }) {
@@ -37,6 +38,12 @@ function App() {
                 <CashierBills />
               </AuthenticatedRoute>
             }/>
+
+            <Route path="/bill/:billId" element={
+              <AuthenticatedRoute>
+                <BillDetail />
+              </AuthenticatedRoute>
+            } />
           </Routes>
         </BrowserRouter>
       </AuthProvider>

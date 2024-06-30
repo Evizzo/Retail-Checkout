@@ -16,7 +16,7 @@ export const executeSaveBill = (bill: any) => {
     return apiClient.post(`/bill`, bill);
 }
 
-export const executeFindBillById = (billId: string) => {
+export const executeFindBillById = (billId: any) => {
     return apiClient.get(`/bill/${billId}`);
 }
 
