@@ -8,14 +8,14 @@ import { useAuth } from '../api/AuthContex';
 function RetailCheckoutPage() {
   const [serialNumber, setSerialNumber] = useState('');
   const [articleName, setArticleName] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<string | number>('');
   const [price, setPrice] = useState('');
   const [totalPrice, setTotalPrice] = useState(0);
   const [articles, setArticles] = useState<Article[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [showPaymentSection, setShowPaymentSection] = useState(false);
   const [paidBy, setPaidBy] = useState<'CASH' | 'CARD' | null>(null);
-  const [amountGivenToCashier, setAmountGivenToCashier] = useState<number | ''>(''); 
+  const [amountGivenToCashier, setAmountGivenToCashier] = useState<number | string>('');
   const [change, setChange] = useState<number | null>(null); 
   const authContext = useAuth();
 
@@ -32,7 +32,8 @@ function RetailCheckoutPage() {
   };
 
   const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setQuantity(Number(e.target.value));
+    const value = e.target.value;
+    setQuantity(value === '' ? '' : Number(value));
   };
 
   const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -40,8 +41,23 @@ function RetailCheckoutPage() {
   };
 
   const handleAddArticle = () => {
+    if (Number(price) <= 0 || Number(quantity) <= 0) {
+      alert('Price and Quantity must be positive numbers.');
+      return;
+    }
+
+    if (Number(quantity) < 1) {
+      alert('Quantity should be at least 1.');
+      return;
+    }
+
+    if (serialNumber.trim() === '' || articleName.trim() === '' || price.trim() === '' || quantity === '') {
+      alert('Please fill in all fields.');
+      return;
+    }
+
     if (serialNumber.trim() !== '' && articleName.trim() !== '' && price.trim() !== '') {
-      const newArticle: Article = { serialNumber, articleName: articleName, quantity, pricePerItem: Number(price) };
+      const newArticle: Article = { serialNumber, articleName: articleName, quantity: Number(quantity), pricePerItem: Number(price) };
       if (editIndex !== null) {
         const updatedArticles = [...articles];
         updatedArticles[editIndex] = newArticle;
@@ -52,7 +68,7 @@ function RetailCheckoutPage() {
       }
       setSerialNumber('');
       setArticleName('');
-      setQuantity(1);
+      setQuantity('');
       setPrice('');
     }
   };
@@ -61,7 +77,7 @@ function RetailCheckoutPage() {
     const article = articles[index];
     setSerialNumber(article.serialNumber);
     setArticleName(article.articleName);
-    setQuantity(article.quantity);
+    setQuantity(article.quantity.toString());
     setPrice(article.pricePerItem.toString());
     setEditIndex(index);
   };
@@ -74,6 +90,10 @@ function RetailCheckoutPage() {
   };
 
   const handleProceedToPayment = () => {
+    if (articles.length === 0) {
+      alert('No articles added. Please add at least one article.');
+      return;
+    }
     setShowPaymentSection(true);
   };
 
@@ -86,7 +106,8 @@ function RetailCheckoutPage() {
   };
 
   const handleAmountGivenChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setAmountGivenToCashier(Number(e.target.value));
+    const value = e.target.value;
+    setAmountGivenToCashier(value === '' ? '' : Number(value));
   };
 
   const handlePaymentSubmission = async () => {
@@ -96,12 +117,11 @@ function RetailCheckoutPage() {
     }
 
     try {
-      console.log(totalPrice);
       const bill = {
         articles,
         paidBy,
         totalPrice,
-        amountGivenToCashier
+        amountGivenToCashier: amountGivenToCashier === '' ? 0 : Number(amountGivenToCashier)
       };
       const response = await executeSaveBill(bill);
       console.log("Bill saved successfully:", response.data);
@@ -109,11 +129,11 @@ function RetailCheckoutPage() {
       setArticles([]);
       setSerialNumber('');
       setArticleName('');
-      setQuantity(1);
+      setQuantity('');
       setPrice('');
       setPaidBy(null);
       setShowPaymentSection(false);
-      setAmountGivenToCashier(''); 
+      setAmountGivenToCashier('');
       setChange(null); 
       setTotalPrice(0);
     } catch (error) {
@@ -133,13 +153,13 @@ function RetailCheckoutPage() {
   const calculateChange = () => {
     const total = totalPrice; 
     const givenAmount = typeof amountGivenToCashier === 'number' ? amountGivenToCashier : parseFloat(amountGivenToCashier);
-    
+
     if (isNaN(givenAmount)) {
       alert('Invalid amount given. Please enter a valid number.');
       setChange(null);
       return;
     }
-  
+
     if (givenAmount >= total) {
       setChange(givenAmount - total);
       setAmountGivenToCashier(givenAmount)
