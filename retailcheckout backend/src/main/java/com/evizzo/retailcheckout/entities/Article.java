@@ -18,15 +18,13 @@ public class Article {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID articleId;
 
-    private String serialNumber;
-
-    private String articleName;
-
     private Integer quantity;
 
-    private Double pricePerItem;
-
     private Double fullPrice;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "store_article_serial_number", referencedColumnName = "serialNumber")
+    private StoreArticle storeArticle;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "bill_id")

@@ -7,6 +7,12 @@ export interface Article {
   articleName: string;
   quantity: number;
   pricePerItem: number;
+  storeArticle: {
+    articleName: string;
+    serialNumber: string;
+    price: number;
+    quantityAvailable: number;
+  } | null;
 }
 
 interface ArticleTableProps {

@@ -5,6 +5,7 @@ import com.evizzo.retailcheckout.dtos.BillDTO;
 import com.evizzo.retailcheckout.entities.Article;
 import com.evizzo.retailcheckout.entities.Bill;
 import com.evizzo.retailcheckout.entities.Person;
+import com.evizzo.retailcheckout.entities.StoreArticle;
 import com.evizzo.retailcheckout.enums.PaymentOptions;
 import com.evizzo.retailcheckout.exceptions.UserNotFoundException;
 import com.evizzo.retailcheckout.repositories.BillRepository;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -25,6 +27,7 @@ public class BillService {
     private final PersonService personService;
     private final DtoService dtoService;
     private final ArticleService articleService;
+    private final StoreArticleService storeArticleService;
 
     public BillDTO saveBill(Bill bill, HttpServletRequest request){
         UUID userId = jwtService.extractUserIdFromToken(request);
@@ -44,8 +47,17 @@ public class BillService {
 
         List<Article> articles = bill.getArticles();
         for (Article article : articles) {
-            article.setFullPrice(article.getQuantity() * article.getPricePerItem());
+            article.setFullPrice(article.getQuantity() * article.getStoreArticle().getPrice());
             article.setBill(savedBill);
+
+            StoreArticle storeArticle = article.getStoreArticle();
+            int newQuantityAvailable = storeArticle.getQuantityAvailable() - article.getQuantity();
+            if (newQuantityAvailable < 0) {
+                throw new IllegalArgumentException("Insufficient stock for Article ID: " + article.getArticleId());
+            }
+            storeArticle.setQuantityAvailable(newQuantityAvailable);
+
+            storeArticleService.saveArticle(storeArticle);
         }
 
         articleService.saveArticles(bill.getArticles());
@@ -60,5 +72,11 @@ public class BillService {
         return bills.stream()
                 .map(dtoService::convertToDto)
                 .collect(Collectors.toList());
+    }
+
+    public Optional<BillDTO> findBillById(UUID billId){
+        Optional<Bill> billOptional = billRepository.findById(billId);
+
+        return billOptional.map(dtoService::convertToDto);
     }
 }

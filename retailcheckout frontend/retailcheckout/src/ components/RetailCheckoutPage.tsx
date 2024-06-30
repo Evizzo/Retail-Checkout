@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Container, Card, Form, Button, InputGroup, FormControl } from 'react-bootstrap';
 import ArticleTable, { Article } from './ArticleTable';
-import { executeSaveBill } from '../api/ApiService';
+import { executeSaveBill, executeRetrieveStoreArticles } from '../api/ApiService';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../api/AuthContex';
 
@@ -16,8 +16,20 @@ function RetailCheckoutPage() {
   const [showPaymentSection, setShowPaymentSection] = useState(false);
   const [paidBy, setPaidBy] = useState<'CASH' | 'CARD' | null>(null);
   const [amountGivenToCashier, setAmountGivenToCashier] = useState<number | string>('');
-  const [change, setChange] = useState<number | null>(null); 
+  const [change, setChange] = useState<number | null>(null);
+  const [availableArticles, setAvailableArticles] = useState<{ articleName: string, serialNumber: string, price: number, quantityAvailable: number }[]>([]);
+  const [selectedStoreArticle, setSelectedStoreArticle] = useState<{ articleName: string, serialNumber: string, price: number, quantityAvailable: number } | null>(null);
   const authContext = useAuth();
+
+  useEffect(() => {
+    executeRetrieveStoreArticles()
+      .then(response => {
+        setAvailableArticles(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching store articles:', error);
+      });
+  }, [articles]);
 
   useEffect(() => {
     calculateTotal();
@@ -27,14 +39,30 @@ function RetailCheckoutPage() {
     setSerialNumber(e.target.value);
   };
 
-  const handleArticleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setArticleName(e.target.value);
+  const handleArticleSelectChange = (e: ChangeEvent<HTMLSelectElement>) => {
+    const selectedArticleInfo = e.target.value;
+    const selectedArticleName = selectedArticleInfo.split(' (')[0];
+    const selectedArticle = availableArticles.find(article => article.articleName === selectedArticleName);
+    if (selectedArticle) {
+      setArticleName(selectedArticleInfo);
+      setSerialNumber(selectedArticle.serialNumber);
+      setPrice(selectedArticle.price.toString());
+      setSelectedStoreArticle(selectedArticle);
+    }
   };
 
   const handleQuantityChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setQuantity(value === '' ? '' : Number(value));
+    const numValue = Number(value);
+  
+    if (selectedStoreArticle && numValue > selectedStoreArticle.quantityAvailable) {
+      alert(`Quantity cannot exceed ${selectedStoreArticle.quantityAvailable}`);
+      setQuantity(selectedStoreArticle.quantityAvailable);
+    } else {
+      setQuantity(value === '' ? '' : numValue);
+    }
   };
+  
 
   const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPrice(e.target.value);
@@ -56,8 +84,18 @@ function RetailCheckoutPage() {
       return;
     }
 
+    if (selectedStoreArticle && Number(quantity) > selectedStoreArticle.quantityAvailable) {
+      alert(`Quantity cannot exceed ${selectedStoreArticle.quantityAvailable}`);
+      return;
+    }
+
     if (serialNumber.trim() !== '' && articleName.trim() !== '' && price.trim() !== '') {
-      const newArticle: Article = { serialNumber, articleName: articleName, quantity: Number(quantity), pricePerItem: Number(price) };
+      const newArticle: Article = { serialNumber, 
+        articleName: articleName, 
+        quantity: Number(quantity), 
+        pricePerItem: Number(price),
+        storeArticle: selectedStoreArticle
+      };
       if (editIndex !== null) {
         const updatedArticles = [...articles];
         updatedArticles[editIndex] = newArticle;
@@ -70,6 +108,7 @@ function RetailCheckoutPage() {
       setArticleName('');
       setQuantity('');
       setPrice('');
+      setSelectedStoreArticle(null);
     }
   };
 
@@ -126,6 +165,8 @@ function RetailCheckoutPage() {
       const response = await executeSaveBill(bill);
       console.log("Bill saved successfully:", response.data);
 
+      alert('Bill paid successfully.');
+
       setArticles([]);
       setSerialNumber('');
       setArticleName('');
@@ -134,7 +175,7 @@ function RetailCheckoutPage() {
       setPaidBy(null);
       setShowPaymentSection(false);
       setAmountGivenToCashier('');
-      setChange(null); 
+      setChange(null);
       setTotalPrice(0);
     } catch (error) {
       console.error("Error saving bill:", error);
@@ -147,11 +188,11 @@ function RetailCheckoutPage() {
       const articleTotal = article.pricePerItem * article.quantity;
       total += articleTotal;
     });
-    setTotalPrice(total); 
+    setTotalPrice(total);
   };
 
   const calculateChange = () => {
-    const total = totalPrice; 
+    const total = totalPrice;
     const givenAmount = typeof amountGivenToCashier === 'number' ? amountGivenToCashier : parseFloat(amountGivenToCashier);
 
     if (isNaN(givenAmount)) {
@@ -162,7 +203,7 @@ function RetailCheckoutPage() {
 
     if (givenAmount >= total) {
       setChange(givenAmount - total);
-      setAmountGivenToCashier(givenAmount)
+      setAmountGivenToCashier(givenAmount);
     } else {
       alert('Amount given is less than the total amount due.');
       setChange(null);
@@ -175,31 +216,38 @@ function RetailCheckoutPage() {
         <Container>
           <h1>Welcome {authContext.username}!</h1>
           <Button variant="secondary" type="button" onClick={authContext.logout}>
-              Logout
-            </Button>
+            Logout
+          </Button>
           <br />
-          <p>Total: ${totalPrice}</p>
+          <p>Total: ${totalPrice.toFixed(2)}</p>
           {!showPaymentSection ? (
             <Form>
+              <Form.Group controlId="formArticleName">
+                <Form.Label>Article Name ({selectedStoreArticle?.quantityAvailable})</Form.Label>
+                <br></br>
+                <Form.Select className="mb-3"
+                  onChange={handleArticleSelectChange}
+                  value={articleName}
+                  required
+                  style={{ width: '23%' }}
+                >aaaaaa
+                  <option value="">Select an article...</option>
+                  {availableArticles.map(article => (
+                    <option key={article.serialNumber} value={article.articleName}>
+                      {article.articleName}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
               <Form.Group controlId="formSerialNumber">
                 <Form.Label>Serial Number</Form.Label>
                 <InputGroup className="mb-3">
                   <FormControl
-                    placeholder="Enter serial number"
+                    placeholder="Serial number"
                     value={serialNumber}
                     onChange={handleSerialNumberChange}
                     required
-                  />
-                </InputGroup>
-              </Form.Group>
-              <Form.Group controlId="formArticleName">
-                <Form.Label>Article Name</Form.Label>
-                <InputGroup className="mb-3">
-                  <FormControl
-                    placeholder="Enter article name"
-                    value={articleName}
-                    onChange={handleArticleNameChange}
-                    required
+                    disabled={true}
                   />
                 </InputGroup>
               </Form.Group>
@@ -220,10 +268,11 @@ function RetailCheckoutPage() {
                 <InputGroup className="mb-3">
                   <FormControl
                     type="number"
-                    placeholder="Enter price"
+                    placeholder="Price"
                     value={price}
                     onChange={handlePriceChange}
                     required
+                    disabled={true}
                   />
                 </InputGroup>
               </Form.Group>
@@ -237,7 +286,7 @@ function RetailCheckoutPage() {
               <Button variant="primary" type="button" onClick={handleProceedToPayment}>
                 Proceed to Payment
               </Button>
-              <br></br>
+              <br /><br />
               <Link to="/cashiers-bills">
                 <Button variant="secondary">
                   View Your Bills
