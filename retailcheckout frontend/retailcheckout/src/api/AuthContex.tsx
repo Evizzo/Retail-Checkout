@@ -9,6 +9,8 @@ export const AuthContext = createContext({
     username: '',
     token: '',
     role: '',
+    cashInCheckout: 5000,
+    updateCashInCheckout: (_newCash: number) => {}
   })
   
 export const useAuth = () => useContext(AuthContext)
@@ -19,6 +21,16 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const [username, setUsername] = useState("")
     const [token, setToken] = useState("")
     const [role, setRole] = useState("")
+
+    const [cashInCheckout, setCashInCheckout] = useState(() => {
+      const storedCash = localStorage.getItem('cashInCheckout');
+      return storedCash ? parseFloat(storedCash) : 5000;
+    });
+
+    const updateCashInCheckout = (newCash: number) => {
+        setCashInCheckout(newCash);
+        localStorage.setItem('cashInCheckout', newCash.toString());
+    };
 
     async function login(username: string, password: string) {
         try {
@@ -65,6 +77,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
               setToken('');
               setUsername('');
               setRole('');
+              setCashInCheckout(5000)
 
               window.location.reload()
 
@@ -81,7 +94,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       }
 
     return (
-        <AuthContext.Provider value={ {isAuthenticated, login, logout, username, token, role }  }>
+        <AuthContext.Provider value={ {isAuthenticated, login, logout, username, token, role, cashInCheckout, updateCashInCheckout }  }>
             {children}
         </AuthContext.Provider>
     )

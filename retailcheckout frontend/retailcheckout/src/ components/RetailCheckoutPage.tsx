@@ -20,6 +20,8 @@ function RetailCheckoutPage() {
   const [availableArticles, setAvailableArticles] = useState<{ articleName: string, serialNumber: string, price: number, quantityAvailable: number }[]>([]);
   const [selectedStoreArticle, setSelectedStoreArticle] = useState<{ articleName: string, serialNumber: string, price: number, quantityAvailable: number } | null>(null);
   const authContext = useAuth();
+  const [changeCalculated, setChangeCalculated] = useState(false);
+  const { cashInCheckout, updateCashInCheckout } = useAuth();
 
   useEffect(() => {
     executeRetrieveStoreArticles()
@@ -69,11 +71,6 @@ function RetailCheckoutPage() {
   };
 
   const handleAddArticle = () => {
-    if (Number(price) <= 0 || Number(quantity) <= 0) {
-      alert('Price and Quantity must be positive numbers.');
-      return;
-    }
-
     if (Number(quantity) < 1) {
       alert('Quantity should be at least 1.');
       return;
@@ -118,6 +115,7 @@ function RetailCheckoutPage() {
     setArticleName(article.articleName);
     setQuantity(article.quantity.toString());
     setPrice(article.pricePerItem.toString());
+    setSelectedStoreArticle(article.storeArticle)
     setEditIndex(index);
   };
 
@@ -138,6 +136,7 @@ function RetailCheckoutPage() {
 
   const handlePaymentMethodSelection = (method: 'CASH' | 'CARD') => {
     setPaidBy(method);
+    setChangeCalculated(false);
   };
 
   const handleGoBack = () => {
@@ -155,6 +154,11 @@ function RetailCheckoutPage() {
       return;
     }
 
+    if (paidBy === 'CASH' && !changeCalculated) {
+      alert("Please calculate the change before proceeding.");
+      return;
+    }
+
     try {
       const bill = {
         articles,
@@ -164,6 +168,11 @@ function RetailCheckoutPage() {
       };
       const response = await executeSaveBill(bill);
       console.log("Bill saved successfully:", response.data);
+
+      if (paidBy === 'CASH') {
+        const newCashInCheckout = cashInCheckout + totalPrice;
+        updateCashInCheckout(newCashInCheckout);
+    }
 
       alert('Bill paid successfully.');
 
@@ -198,27 +207,48 @@ function RetailCheckoutPage() {
     if (isNaN(givenAmount)) {
       alert('Invalid amount given. Please enter a valid number.');
       setChange(null);
+      setChangeCalculated(false);
       return;
     }
 
     if (givenAmount >= total) {
+      const newChange = givenAmount - total;
+
+      if (newChange > cashInCheckout) {
+        alert(`Insufficient cash in the register to provide change. Current cash in checkout: $${cashInCheckout.toFixed(2)}`);
+        setChange(null);
+        setChangeCalculated(false);
+        return;
+      }
+      
       setChange(givenAmount - total);
       setAmountGivenToCashier(givenAmount);
+      setChangeCalculated(true);
     } else {
       alert('Amount given is less than the total amount due.');
       setChange(null);
+      setChangeCalculated(false);
     }
+  };
+
+  const restartDeposit = () => {
+    updateCashInCheckout(5000);
+    alert("Cash in checkout has been reset to $5000.");
   };
 
   return (
     <div className="d-flex justify-content-center align-items-center vh-100">
       <Card className="bg-light p-4 text-center" style={{ width: '100%', maxWidth: '800px' }}>
         <Container>
-          <h1>Welcome {authContext.username}!</h1>
           <Button variant="secondary" type="button" onClick={authContext.logout}>
             Logout
           </Button>
-          <br />
+          <h1>Welcome {authContext.username}!</h1>
+          <p>Cash in Checkout: ${cashInCheckout.toFixed(2)}</p>
+          <Button variant="secondary" onClick={restartDeposit}>
+            Restart Deposit
+        </Button>
+          <hr/>
           <p>Total: ${totalPrice.toFixed(2)}</p>
           {!showPaymentSection ? (
             <Form>
@@ -287,6 +317,7 @@ function RetailCheckoutPage() {
                 Proceed to Payment
               </Button>
               <br /><br />
+              <hr></hr>
               <Link to="/cashiers-bills">
                 <Button variant="secondary">
                   View Your Bills

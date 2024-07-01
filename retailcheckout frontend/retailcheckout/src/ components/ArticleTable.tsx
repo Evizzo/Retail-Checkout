@@ -81,6 +81,7 @@ const ArticleTable: React.FC<ArticleTableProps> = ({ articles, onEdit, onDelete 
             <td>${calculateTotalPrice(article)}</td>
             <td>
               <Button variant="info" size="sm" onClick={() => onEdit(index)}>Edit</Button>{' '}
+              <hr></hr>
               <Button variant="danger" size="sm" onClick={() => onDelete(index)}>Delete</Button>
             </td>
           </tr>
