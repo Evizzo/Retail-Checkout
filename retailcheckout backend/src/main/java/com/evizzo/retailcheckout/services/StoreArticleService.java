@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,5 +26,10 @@ public class StoreArticleService {
 
     public void saveArticle(StoreArticle storeArticle) {
         storeArticleRepository.save(storeArticle);
+    }
+
+    public Optional<StoreArticleDTO> retrieveStoreArticleBySerialNumber(String serialNumber) {
+        return storeArticleRepository.findById(serialNumber)
+                .map(dtoService::convertToDto);
     }
 }

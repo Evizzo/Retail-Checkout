@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Container, Card, Form, Button, InputGroup, FormControl } from 'react-bootstrap';
 import ArticleTable, { Article } from './ArticleTable';
-import { executeSaveBill, executeRetrieveStoreArticles } from '../api/ApiService';
+import { executeSaveBill, executeRetrieveStoreArticles, executeFindStoreArticleBySerialNumber } from '../api/ApiService';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../api/AuthContex';
 
@@ -64,13 +64,34 @@ function RetailCheckoutPage() {
       setQuantity(value === '' ? '' : numValue);
     }
   };
-  
 
   const handlePriceChange = (e: ChangeEvent<HTMLInputElement>) => {
     setPrice(e.target.value);
   };
 
-  const handleAddArticle = () => {
+  const searchArticle = async () => {
+    try {
+      const response = await executeFindStoreArticleBySerialNumber(serialNumber);
+      const article = response.data;
+      if (article) {
+        setArticleName(article.articleName);
+        setPrice(article.price.toString());
+        setSelectedStoreArticle(article);
+        const selectElement = document.querySelector('select') as HTMLSelectElement;
+        if (selectElement) {
+          selectElement.value = article.articleName;
+          handleArticleSelectChange({ target: { value: article.articleName } } as ChangeEvent<HTMLSelectElement>);
+        }
+      } else {
+        alert('Article not found.');
+      }
+    } catch (error) {
+      console.error('Error fetching article by serial number:', error);
+      alert('An error occurred while searching for the article.');
+    }
+  };
+
+  const handleAddArticle = async () => {
     if (Number(quantity) < 1) {
       alert('Quantity should be at least 1.');
       return;
@@ -86,13 +107,22 @@ function RetailCheckoutPage() {
       return;
     }
 
-    if (serialNumber.trim() !== '' && articleName.trim() !== '' && price.trim() !== '') {
-      const newArticle: Article = { serialNumber, 
-        articleName: articleName, 
+    try {
+      const response = await executeFindStoreArticleBySerialNumber(serialNumber);
+      const article = response.data;
+      if (!article) {
+        alert('Article does not exist.');
+        return;
+      }
+
+      const newArticle: Article = { 
+        serialNumber, 
+        articleName: article.articleName, 
         quantity: Number(quantity), 
         pricePerItem: Number(price),
         storeArticle: selectedStoreArticle
       };
+      
       if (editIndex !== null) {
         const updatedArticles = [...articles];
         updatedArticles[editIndex] = newArticle;
@@ -106,16 +136,32 @@ function RetailCheckoutPage() {
       setQuantity('');
       setPrice('');
       setSelectedStoreArticle(null);
+    } catch (error) {
+      console.error('Error adding article:', error);
+      alert('An error occurred while adding the article.');
     }
   };
 
-  const handleEditArticle = (index: number) => {
+  const handleEditArticle = async (index: number) => {
     const article = articles[index];
     setSerialNumber(article.serialNumber);
     setArticleName(article.articleName);
     setQuantity(article.quantity.toString());
     setPrice(article.pricePerItem.toString());
-    setSelectedStoreArticle(article.storeArticle)
+    setSelectedStoreArticle(article.storeArticle);
+
+    try {
+      const response = await executeFindStoreArticleBySerialNumber(article.serialNumber);
+      const fetchedArticle = response.data;
+      if (fetchedArticle) {
+        setSelectedStoreArticle(fetchedArticle);
+      } else {
+        alert('Article does not exist.');
+      }
+    } catch (error) {
+      console.error('Error fetching article during edit:', error);
+      alert('An error occurred while editing the article.');
+    }
     setEditIndex(index);
   };
 
@@ -172,7 +218,7 @@ function RetailCheckoutPage() {
       if (paidBy === 'CASH') {
         const newCashInCheckout = cashInCheckout + totalPrice;
         updateCashInCheckout(newCashInCheckout);
-    }
+      }
 
       alert('Bill paid successfully.');
 
@@ -247,7 +293,7 @@ function RetailCheckoutPage() {
           <p>Cash in Checkout: ${cashInCheckout.toFixed(2)}</p>
           <Button variant="secondary" onClick={restartDeposit}>
             Restart Deposit
-        </Button>
+          </Button>
           <hr/>
           <p>Total: ${totalPrice.toFixed(2)}</p>
           {!showPaymentSection ? (
@@ -277,9 +323,14 @@ function RetailCheckoutPage() {
                     value={serialNumber}
                     onChange={handleSerialNumberChange}
                     required
-                    disabled={true}
                   />
                 </InputGroup>
+                <Button
+                  variant="primary"
+                  onClick={searchArticle}
+                  style={{ fontSize: '0.75rem', padding: '0.5rem 0.5rem' }}>
+                    Search
+                </Button>
               </Form.Group>
               <Form.Group controlId="formQuantity">
                 <Form.Label>Quantity</Form.Label>

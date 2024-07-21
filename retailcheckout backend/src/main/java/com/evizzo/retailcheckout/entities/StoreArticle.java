@@ -1,9 +1,6 @@
 package com.evizzo.retailcheckout.entities;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +17,7 @@ public class StoreArticle {
     @Id
     private String serialNumber;
 
+    @Column(unique = true)
     private String articleName;
 
     private Double price;

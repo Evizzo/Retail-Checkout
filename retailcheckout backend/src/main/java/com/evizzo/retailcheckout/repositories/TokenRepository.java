@@ -17,12 +17,10 @@ public interface TokenRepository extends JpaRepository<Token, UUID> {
        """)
     List<Token> findAllValidTokensByUser(UUID userId);
 
-
     Optional<Token> findByToken(String token);
 
     @Modifying
     @Transactional
     @Query("DELETE FROM Token t WHERE t.user.userId = :userId")
     void deleteAllTokensByUserId(UUID userId);
-
 }

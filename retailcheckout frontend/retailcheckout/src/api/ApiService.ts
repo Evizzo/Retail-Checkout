@@ -23,3 +23,7 @@ export const executeFindBillById = (billId: any) => {
 export const executeRetrieveStoreArticles = () => {
     return apiClient.get(`/store-articles`);
 }
+
+export const executeFindStoreArticleBySerialNumber = (serialNumber: string) => {
+    return apiClient.get(`/store-articles/${serialNumber}`);
+}
