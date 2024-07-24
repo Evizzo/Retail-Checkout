@@ -16,6 +16,7 @@ public class LoyaltyCardController {
      *
      * @param code The loyalty card code.
      * @param pointsToRedeem The number of points to redeem.
+     * @param totalBillPrice The total price of the bill.
      * @return The value of the redeemed points in dollars.
      */
     @PreAuthorize("hasAuthority('cashier:update')")

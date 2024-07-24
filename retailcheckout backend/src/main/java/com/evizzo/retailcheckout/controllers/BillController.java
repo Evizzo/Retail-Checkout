@@ -28,6 +28,7 @@ public class BillController {
      *
      * @param bill The bill to be saved, must be valid.
      * @param request The HTTP request associated with this operation.
+     * @param code Optional code parameter for additional operations.
      * @return ResponseEntity containing the saved BillDTO.
      */
     @Transactional
