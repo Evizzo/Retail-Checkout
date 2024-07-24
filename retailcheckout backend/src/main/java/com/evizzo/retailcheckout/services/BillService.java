@@ -2,13 +2,11 @@ package com.evizzo.retailcheckout.services;
 
 import com.evizzo.retailcheckout.config.JwtService;
 import com.evizzo.retailcheckout.dtos.BillDTO;
-import com.evizzo.retailcheckout.entities.Article;
-import com.evizzo.retailcheckout.entities.Bill;
-import com.evizzo.retailcheckout.entities.Person;
-import com.evizzo.retailcheckout.entities.StoreArticle;
+import com.evizzo.retailcheckout.entities.*;
 import com.evizzo.retailcheckout.enums.PaymentOptions;
 import com.evizzo.retailcheckout.exceptions.UserNotFoundException;
 import com.evizzo.retailcheckout.repositories.BillRepository;
+import com.evizzo.retailcheckout.repositories.LoyaltyCardRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,19 +26,30 @@ public class BillService {
     private final DtoService dtoService;
     private final ArticleService articleService;
     private final StoreArticleService storeArticleService;
+    private final LoyaltyCardRepository loyaltyCardRepository;
 
-    public BillDTO saveBill(Bill bill, HttpServletRequest request){
+    public BillDTO saveBill(Bill bill, HttpServletRequest request, String code){
         UUID userId = jwtService.extractUserIdFromToken(request);
         Person user = personService.findUserById(userId).orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
         bill.setUser(user);
         bill.setDate(LocalDateTime.now());
+        bill.setTotalPrice(bill.getTotalPrice() + bill.getPaidWithPoints());
 
         if (bill.getPaidBy() == PaymentOptions.CARD){
             bill.setChangeGiven(0.0);
-            bill.setAmountGivenToCashier(bill.getTotalPrice());
+            bill.setAmountGivenToCashier(bill.getTotalPrice() - bill.getPaidWithPoints());
         } else {
-            bill.setChangeGiven(bill.getAmountGivenToCashier() - bill.getTotalPrice());
+            bill.setChangeGiven(bill.getAmountGivenToCashier() - bill.getTotalPrice() + bill.getPaidWithPoints());
+        }
+
+        if (code != null && !code.isEmpty()) {
+            Optional<LoyaltyCard> optionalCard = loyaltyCardRepository.findByCode(code);
+            if (optionalCard.isPresent()) {
+                LoyaltyCard card = optionalCard.get();
+                card.setPoints(card.getPoints() + bill.getTotalPrice());
+                loyaltyCardRepository.save(card);
+            }
         }
 
         Bill savedBill = billRepository.save(bill);

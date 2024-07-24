@@ -24,6 +24,7 @@ interface BillDTO {
   articles: ArticleDTO[];
   userId: string;
   [key: string]: string | number | ArticleDTO[];
+  paidWithPoints: number;
 }
 
 const CashierBills: React.FC = () => {
@@ -82,6 +83,7 @@ const CashierBills: React.FC = () => {
             <th onClick={() => requestSort('totalPrice')}>Total Price</th>
             <th onClick={() => requestSort('changeGiven')}>Change Given</th>
             <th onClick={() => requestSort('amountGivenToCashier')}>Amount Given To Cashier</th>
+            <th onClick={() => requestSort('amountGivenToCashier')}>Amount paid with points</th>
             <th>Articles</th>
           </tr>
         </thead>
@@ -96,6 +98,7 @@ const CashierBills: React.FC = () => {
               <td>{bill.totalPrice.toFixed(2)}</td>
               <td>{bill.changeGiven.toFixed(2)}</td>
               <td>{bill.amountGivenToCashier.toFixed(2)}</td>
+              <td>{bill.paidWithPoints.toFixed(2)}</td>
               <td>
                 <ul>
                   {bill.articles.map((article) => (

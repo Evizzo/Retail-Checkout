@@ -32,6 +32,8 @@ public class Bill {
 
     private Double amountGivenToCashier;
 
+    private Double paidWithPoints;
+
     @OneToMany(mappedBy = "bill")
     private List<Article> articles;
 

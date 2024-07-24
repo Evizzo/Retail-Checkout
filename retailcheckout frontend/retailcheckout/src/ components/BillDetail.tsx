@@ -62,6 +62,7 @@ function BillDetail() {
       <p>Total Price: ${bill.totalPrice.toFixed(2)}</p>
       <p>Change Given: ${bill.changeGiven.toFixed(2)}</p>
       <p>Amount Given To Cashier: ${bill.amountGivenToCashier.toFixed(2)}</p>
+      <p>Amount paid with points: ${bill.paidWithPoints.toFixed(2)}</p>
       <h3>Articles</h3>
       <ul>
         {bill.articles.map((article: any) => (

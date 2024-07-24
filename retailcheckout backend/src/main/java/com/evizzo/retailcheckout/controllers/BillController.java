@@ -33,8 +33,9 @@ public class BillController {
     @Transactional
     @PreAuthorize("hasAuthority('cashier:create')")
     @PostMapping
-    public ResponseEntity<BillDTO> saveBill(@Valid @RequestBody Bill bill, HttpServletRequest request){
-        return ResponseEntity.ok(billService.saveBill(bill, request));
+    public ResponseEntity<BillDTO> saveBill(@Valid @RequestBody Bill bill, HttpServletRequest request,
+                                            @RequestParam(value = "code", required = false) String code){
+        return ResponseEntity.ok(billService.saveBill(bill, request, code));
     }
 
     /**

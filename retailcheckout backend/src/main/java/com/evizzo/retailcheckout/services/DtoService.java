@@ -1,13 +1,7 @@
 package com.evizzo.retailcheckout.services;
 
-import com.evizzo.retailcheckout.dtos.ArticleDTO;
-import com.evizzo.retailcheckout.dtos.BillDTO;
-import com.evizzo.retailcheckout.dtos.PersonDTO;
-import com.evizzo.retailcheckout.dtos.StoreArticleDTO;
-import com.evizzo.retailcheckout.entities.Article;
-import com.evizzo.retailcheckout.entities.Bill;
-import com.evizzo.retailcheckout.entities.Person;
-import com.evizzo.retailcheckout.entities.StoreArticle;
+import com.evizzo.retailcheckout.dtos.*;
+import com.evizzo.retailcheckout.entities.*;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -41,6 +35,7 @@ public class DtoService {
                 .changeGiven(bill.getChangeGiven())
                 .totalPrice(bill.getTotalPrice())
                 .amountGivenToCashier(bill.getAmountGivenToCashier())
+                .paidWithPoints(bill.getPaidWithPoints())
                 .userId(bill.getUser() != null ? bill.getUser().getUserId() : null)
                 .build();
     }
@@ -59,6 +54,16 @@ public class DtoService {
                 .id(person.getUserId())
                 .username(person.getUsername())
                 .role(person.getRole())
+                .build();
+    }
+
+    public LoyaltyCardDTO convertToDto(LoyaltyCard loyaltyCard) {
+        return LoyaltyCardDTO.builder()
+                .jmbg(loyaltyCard.getJmbg())
+                .firstname(loyaltyCard.getFirstname())
+                .lastname(loyaltyCard.getLastname())
+                .phonenumber(loyaltyCard.getPhonenumber())
+                .points(loyaltyCard.getPoints())
                 .build();
     }
 }

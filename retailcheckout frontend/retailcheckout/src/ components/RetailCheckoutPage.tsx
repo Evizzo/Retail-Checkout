@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent } from 'react';
 import { Container, Card, Form, Button, InputGroup, FormControl } from 'react-bootstrap';
 import ArticleTable, { Article } from './ArticleTable';
-import { executeSaveBill, executeRetrieveStoreArticles, executeFindStoreArticleBySerialNumber } from '../api/ApiService';
+import { executeSaveBill, executeRetrieveStoreArticles, executeFindStoreArticleBySerialNumber, executeGetAvailablePoints, executeCodeRedeem } from '../api/ApiService';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../api/AuthContex';
 
@@ -22,6 +22,9 @@ function RetailCheckoutPage() {
   const authContext = useAuth();
   const [changeCalculated, setChangeCalculated] = useState(false);
   const { cashInCheckout, updateCashInCheckout } = useAuth();
+  const [loyaltyCode, setLoyaltyCode] = useState('');
+  const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
+  const [paidWithPoints, setPaidWithPoints] = useState<number>(0);
 
   useEffect(() => {
     executeRetrieveStoreArticles()
@@ -36,6 +39,44 @@ function RetailCheckoutPage() {
   useEffect(() => {
     calculateTotal();
   }, [articles]);
+
+  const handleLoyaltyCodeChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setLoyaltyCode(e.target.value);
+  };
+
+  const handlePointsToRedeemChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const numValue = Number(value);
+
+    if (isNaN(numValue) || numValue < 0) {
+        alert('Points to redeem cannot be negative or invalid.');
+        setPointsToRedeem(0);
+    } else {
+        setPointsToRedeem(numValue);
+    }
+  };
+
+  const handleGetAvailablePoints = async () => {
+    try {
+      const response = await executeGetAvailablePoints(loyaltyCode);
+      alert(`Available points: ${response.data}`);
+    } catch (error) {
+      console.error('Error fetching available points:', error);
+      alert('An error occurred while fetching available points.');
+    }
+  };
+
+  const handleRedeemPoints = async () => {
+    try {
+      const response = await executeCodeRedeem(loyaltyCode, pointsToRedeem, totalPrice);
+      setPaidWithPoints(prevPoints => prevPoints + response.data);
+      alert(`Redeemed points: ${response.data}`);
+      setTotalPrice(totalPrice - response.data);
+    } catch (error) {
+      console.error('Error redeeming points:', error);
+      alert('An error occurred while redeeming points.');
+    }
+  };
 
   const handleSerialNumberChange = (e: ChangeEvent<HTMLInputElement>) => {
     setSerialNumber(e.target.value);
@@ -209,10 +250,11 @@ function RetailCheckoutPage() {
       const bill = {
         articles,
         paidBy,
-        totalPrice,
-        amountGivenToCashier: amountGivenToCashier === '' ? 0 : Number(amountGivenToCashier)
+        totalPrice: totalPrice,
+        amountGivenToCashier: (amountGivenToCashier === '' ? 0 : Number(amountGivenToCashier)),
+        paidWithPoints
       };
-      const response = await executeSaveBill(bill);
+      const response = await executeSaveBill(bill, loyaltyCode);
       console.log("Bill saved successfully:", response.data);
 
       if (paidBy === 'CASH') {
@@ -232,6 +274,7 @@ function RetailCheckoutPage() {
       setAmountGivenToCashier('');
       setChange(null);
       setTotalPrice(0);
+      setLoyaltyCode('')
     } catch (error) {
       console.error("Error saving bill:", error);
     }
@@ -417,6 +460,36 @@ function RetailCheckoutPage() {
                   {change !== null && <p>Change: ${change.toFixed(2)}</p>}
                 </div>
               )}
+              <hr></hr>
+              <Form.Group controlId="formRedeemCode">
+                <Form.Label>Loyalty Card Code</Form.Label>
+                <InputGroup className="mb-3">
+                  <FormControl
+                    placeholder="Enter redeem code"
+                    value={loyaltyCode}
+                    onChange={handleLoyaltyCodeChange}
+                  />
+                </InputGroup>
+              </Form.Group>
+              <Form.Group controlId="formPointsToRedeem">
+                <Form.Label>Points to Redeem</Form.Label>
+                <InputGroup className="mb-3">
+                  <FormControl
+                    type="number"
+                    placeholder="Enter points to redeem"
+                    value={pointsToRedeem}
+                    onChange={handlePointsToRedeemChange}
+                  />
+                  <br></br> <br></br>
+                  <Button variant="primary" onClick={handleRedeemPoints}>
+                    Redeem Points
+                  </Button>
+                  <Button variant="primary" onClick={handleGetAvailablePoints}>
+                    Search points
+                  </Button>
+                </InputGroup>
+              </Form.Group>
+              <hr></hr>
               <Button variant="primary" type="button" onClick={handlePaymentSubmission}>
                 Submit Payment
               </Button>

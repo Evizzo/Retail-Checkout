@@ -21,6 +21,7 @@ public class BillDTO {
     private Double totalPrice;
     private Double changeGiven;
     private Double amountGivenToCashier;
+    private Double paidWithPoints;
     private List<ArticleDTO> articles;
     private UUID userId;
 }
