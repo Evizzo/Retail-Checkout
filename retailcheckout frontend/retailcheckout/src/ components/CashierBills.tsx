@@ -25,6 +25,9 @@ interface BillDTO {
   userId: string;
   [key: string]: string | number | ArticleDTO[];
   paidWithPoints: number;
+  cashAmount: number;
+  cardAmount: number;
+  codeUsed: string;
 }
 
 const CashierBills: React.FC = () => {
@@ -83,7 +86,10 @@ const CashierBills: React.FC = () => {
             <th onClick={() => requestSort('totalPrice')}>Total Price</th>
             <th onClick={() => requestSort('changeGiven')}>Change Given</th>
             <th onClick={() => requestSort('amountGivenToCashier')}>Amount Given To Cashier</th>
-            <th onClick={() => requestSort('amountGivenToCashier')}>Amount paid with points</th>
+            <th onClick={() => requestSort('paidWithPoints')}>Amount paid with points</th>
+            <th onClick={() => requestSort('cashAmount')}>CASH</th>
+            <th onClick={() => requestSort('cardAmount')}>CARD</th>
+            <th onClick={() => requestSort('codeUsed')}>Code used</th>
             <th>Articles</th>
           </tr>
         </thead>
@@ -99,6 +105,9 @@ const CashierBills: React.FC = () => {
               <td>{bill.changeGiven.toFixed(2)}</td>
               <td>{bill.amountGivenToCashier.toFixed(2)}</td>
               <td>{bill.paidWithPoints.toFixed(2)}</td>
+              <td>{bill.cashAmount.toFixed(2)}</td>
+              <td>{bill.cardAmount.toFixed(2)}</td>
+              <td>{bill.codeUsed}</td>
               <td>
                 <ul>
                   {bill.articles.map((article) => (

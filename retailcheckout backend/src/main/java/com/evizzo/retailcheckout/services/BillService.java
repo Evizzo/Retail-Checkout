@@ -39,8 +39,10 @@ public class BillService {
         if (bill.getPaidBy() == PaymentOptions.CARD){
             bill.setChangeGiven(0.0);
             bill.setAmountGivenToCashier(bill.getTotalPrice() - bill.getPaidWithPoints());
-        } else {
+        } else if (bill.getPaidBy() == PaymentOptions.CASH){
             bill.setChangeGiven(bill.getAmountGivenToCashier() - bill.getTotalPrice() + bill.getPaidWithPoints());
+        } else {
+            bill.setChangeGiven(bill.getAmountGivenToCashier() - (bill.getTotalPrice() - bill.getCardAmount()) + bill.getPaidWithPoints());
         }
 
         if (code != null && !code.isEmpty()) {
@@ -48,6 +50,7 @@ public class BillService {
             if (optionalCard.isPresent()) {
                 LoyaltyCard card = optionalCard.get();
                 card.setPoints(card.getPoints() + bill.getTotalPrice());
+                bill.setCodeUsed(code);
                 loyaltyCardRepository.save(card);
             }
         }

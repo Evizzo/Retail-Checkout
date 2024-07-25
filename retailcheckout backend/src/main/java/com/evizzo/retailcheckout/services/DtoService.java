@@ -36,6 +36,9 @@ public class DtoService {
                 .totalPrice(bill.getTotalPrice())
                 .amountGivenToCashier(bill.getAmountGivenToCashier())
                 .paidWithPoints(bill.getPaidWithPoints())
+                .cashAmount(bill.getCashAmount())
+                .cardAmount(bill.getCardAmount())
+                .codeUsed(bill.getCodeUsed())
                 .userId(bill.getUser() != null ? bill.getUser().getUserId() : null)
                 .build();
     }

@@ -22,6 +22,9 @@ public class BillDTO {
     private Double changeGiven;
     private Double amountGivenToCashier;
     private Double paidWithPoints;
+    private double cashAmount;
+    private double cardAmount;
+    private String codeUsed;
     private List<ArticleDTO> articles;
     private UUID userId;
 }

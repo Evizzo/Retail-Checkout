@@ -14,7 +14,7 @@ function RetailCheckoutPage() {
   const [articles, setArticles] = useState<Article[]>([]);
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [showPaymentSection, setShowPaymentSection] = useState(false);
-  const [paidBy, setPaidBy] = useState<'CASH' | 'CARD' | null>(null);
+  const [paidBy, setPaidBy] = useState<'CASH' | 'CARD' | 'SPLIT' | null>(null);
   const [amountGivenToCashier, setAmountGivenToCashier] = useState<number | string>('');
   const [change, setChange] = useState<number | null>(null);
   const [availableArticles, setAvailableArticles] = useState<{ articleName: string, serialNumber: string, price: number, quantityAvailable: number }[]>([]);
@@ -25,7 +25,9 @@ function RetailCheckoutPage() {
   const [loyaltyCode, setLoyaltyCode] = useState('');
   const [pointsToRedeem, setPointsToRedeem] = useState<number>(0);
   const [paidWithPoints, setPaidWithPoints] = useState<number>(0);
-
+  const [cashAmount, setCashAmount] = useState<string>('');
+  const [cardAmount, setCardAmount] = useState<string>('');
+  
   useEffect(() => {
     executeRetrieveStoreArticles()
       .then(response => {
@@ -221,9 +223,11 @@ function RetailCheckoutPage() {
     setShowPaymentSection(true);
   };
 
-  const handlePaymentMethodSelection = (method: 'CASH' | 'CARD') => {
+  const handlePaymentMethodSelection = (method: 'CASH' | 'CARD' | 'SPLIT') => {
     setPaidBy(method);
     setChangeCalculated(false);
+    setCashAmount('');
+    setCardAmount('');
   };
 
   const handleGoBack = () => {
@@ -237,46 +241,73 @@ function RetailCheckoutPage() {
 
   const handlePaymentSubmission = async () => {
     if (!paidBy) {
-      alert("Please select a payment method.");
-      return;
+        alert("Please select a payment method.");
+        return;
     }
 
     if (paidBy === 'CASH' && !changeCalculated) {
+        alert("Please calculate the change before proceeding.");
+        return;
+    }
+
+    if (paidBy === 'SPLIT' && !changeCalculated) {
       alert("Please calculate the change before proceeding.");
       return;
+  }
+
+    let cash = 0;
+    let card = 0;
+
+    if (paidBy === 'SPLIT') {
+      cash = parseFloat(cashAmount);
+      card = parseFloat(cardAmount);
+  
+      if (isNaN(cash)) cash = 0;
+      if (isNaN(card)) card = 0;
+      
+      if (Math.abs((cash + card) - (totalPrice)) > 0.01) {
+        alert('Invalid split amounts. The total should match the bill amount.');
+        console.log(totalPrice)
+        console.log(cash)
+        console.log(card)
+        return;
+      }      
     }
 
     try {
-      const bill = {
-        articles,
-        paidBy,
-        totalPrice: totalPrice,
-        amountGivenToCashier: (amountGivenToCashier === '' ? 0 : Number(amountGivenToCashier)),
-        paidWithPoints
-      };
-      const response = await executeSaveBill(bill, loyaltyCode);
-      console.log("Bill saved successfully:", response.data);
+        const bill = {
+            articles,
+            paidBy,
+            totalPrice: totalPrice,
+            amountGivenToCashier: (amountGivenToCashier === '' ? 0 : Number(amountGivenToCashier)),
+            paidWithPoints,
+            cashAmount: paidBy === 'SPLIT' ? cash : (paidBy === 'CASH' ? totalPrice : 0),
+            cardAmount: paidBy === 'SPLIT' ? card : (paidBy === 'CARD' ? totalPrice : 0)
+        };
+        const response = await executeSaveBill(bill, loyaltyCode);
+        console.log("Bill saved successfully:", response.data);
 
-      if (paidBy === 'CASH') {
-        const newCashInCheckout = cashInCheckout + totalPrice;
-        updateCashInCheckout(newCashInCheckout);
-      }
+        if (paidBy === 'CASH' || paidBy === 'SPLIT') {
+            const newCashInCheckout = cashInCheckout + (paidBy === 'SPLIT' ? cash : totalPrice);
+            updateCashInCheckout(newCashInCheckout);
+        }
 
-      alert('Bill paid successfully.');
+        alert('Bill paid successfully.');
 
-      setArticles([]);
-      setSerialNumber('');
-      setArticleName('');
-      setQuantity('');
-      setPrice('');
-      setPaidBy(null);
-      setShowPaymentSection(false);
-      setAmountGivenToCashier('');
-      setChange(null);
-      setTotalPrice(0);
-      setLoyaltyCode('')
+        setArticles([]);
+        setSerialNumber('');
+        setArticleName('');
+        setQuantity('');
+        setPrice('');
+        setPaidBy(null);
+        setShowPaymentSection(false);
+        setAmountGivenToCashier('');
+        setChange(null);
+        setTotalPrice(0);
+        setLoyaltyCode('');
+        setPointsToRedeem(0);
     } catch (error) {
-      console.error("Error saving bill:", error);
+        console.error("Error saving bill:", error);
     }
   };
 
@@ -292,25 +323,38 @@ function RetailCheckoutPage() {
   const calculateChange = () => {
     const total = totalPrice;
     const givenAmount = typeof amountGivenToCashier === 'number' ? amountGivenToCashier : parseFloat(amountGivenToCashier);
-
+  
     if (isNaN(givenAmount)) {
       alert('Invalid amount given. Please enter a valid number.');
       setChange(null);
       setChangeCalculated(false);
       return;
     }
-
-    if (givenAmount >= total) {
+  
+    if (paidBy === 'CASH' && givenAmount >= total) {
       const newChange = givenAmount - total;
-
+  
       if (newChange > cashInCheckout) {
         alert(`Insufficient cash in the register to provide change. Current cash in checkout: $${cashInCheckout.toFixed(2)}`);
         setChange(null);
         setChangeCalculated(false);
         return;
       }
-      
-      setChange(givenAmount - total);
+  
+      setChange(newChange);
+      setAmountGivenToCashier(givenAmount);
+      setChangeCalculated(true);
+    } else if (paidBy === 'SPLIT' && givenAmount >= parseFloat(cashAmount)) {
+      const newChange = givenAmount - parseFloat(cashAmount);
+  
+      if (newChange > cashInCheckout) {
+        alert(`Insufficient cash in the register to provide change. Current cash in checkout: $${cashInCheckout.toFixed(2)}`);
+        setChange(null);
+        setChangeCalculated(false);
+        return;
+      }
+  
+      setChange(newChange);
       setAmountGivenToCashier(givenAmount);
       setChangeCalculated(true);
     } else {
@@ -318,7 +362,7 @@ function RetailCheckoutPage() {
       setChange(null);
       setChangeCalculated(false);
     }
-  };
+  };  
 
   const restartDeposit = () => {
     updateCashInCheckout(5000);
@@ -422,43 +466,93 @@ function RetailCheckoutPage() {
             <div>
               <h3>Choose Payment Method</h3>
               <fieldset>
-                <Form.Group>
-                  <Form.Check
-                    type="radio"
-                    label="Cash"
-                    name="paymentMethod"
-                    id="cash"
-                    onChange={() => handlePaymentMethodSelection('CASH')}
-                  />
-                  <Form.Check
-                    type="radio"
-                    label="Card"
-                    name="paymentMethod"
-                    id="card"
-                    onChange={() => handlePaymentMethodSelection('CARD')}
-                  />
-                </Form.Group>
-              </fieldset>
-              <br />
-              {paidBy === 'CASH' && (
-                <div>
-                  <Form.Group controlId="formAmountGiven">
-                    <Form.Label>Amount Given</Form.Label>
-                    <InputGroup className="mb-3">
-                      <FormControl
-                        type="number"
-                        placeholder="Enter amount given"
-                        value={amountGivenToCashier}
-                        onChange={handleAmountGivenChange}
+                  <Form.Group>
+                      <Form.Check
+                          type="radio"
+                          label="Cash"
+                          name="paymentMethod"
+                          id="cash"
+                          onChange={() => handlePaymentMethodSelection('CASH')}
                       />
-                    </InputGroup>
+                      <Form.Check
+                          type="radio"
+                          label="Card"
+                          name="paymentMethod"
+                          id="card"
+                          onChange={() => handlePaymentMethodSelection('CARD')}
+                      />
+                      <Form.Check
+                          type="radio"
+                          label="Split"
+                          name="paymentMethod"
+                          id="split"
+                          onChange={() => handlePaymentMethodSelection('SPLIT')}
+                      />
                   </Form.Group>
-                  <Button variant="primary" type="button" onClick={calculateChange}>
-                    Calculate Change
-                  </Button>
-                  <br /><br />
-                  {change !== null && <p>Change: ${change.toFixed(2)}</p>}
-                </div>
+                    </fieldset>
+                    <br />
+                    {paidBy === 'CASH' && (
+                        <div>
+                            <Form.Group controlId="formAmountGiven">
+                                <Form.Label>Amount Given</Form.Label>
+                                <InputGroup className="mb-3">
+                                    <FormControl
+                                        type="number"
+                                        placeholder="Enter amount given"
+                                        value={amountGivenToCashier}
+                                        onChange={handleAmountGivenChange}
+                                    />
+                                </InputGroup>
+                            </Form.Group>
+                            <Button variant="primary" type="button" onClick={calculateChange}>
+                                Calculate Change
+                            </Button>
+                            <br /><br />
+                            {change !== null && <p>Change: ${change.toFixed(2)}</p>}
+                        </div>
+                    )}
+                    {paidBy === 'SPLIT' && (
+                  <div>
+                      <Form.Group controlId="formCashAmount">
+                          <Form.Label>Cash Amount</Form.Label>
+                          <InputGroup className="mb-3">
+                              <FormControl
+                                  type="number"
+                                  placeholder="Enter cash amount"
+                                  value={cashAmount}
+                                  onChange={(e) => setCashAmount(e.target.value)}
+                              />
+                          </InputGroup>
+                      </Form.Group>
+                      <Form.Group controlId="formCardAmount">
+                          <Form.Label>Card Amount</Form.Label>
+                          <InputGroup className="mb-3">
+                              <FormControl
+                                  type="number"
+                                  placeholder="Enter card amount"
+                                  value={cardAmount}
+                                  onChange={(e) => setCardAmount(e.target.value)}
+                              />
+                          </InputGroup>
+                      </Form.Group>
+                      <p>Total Payment: ${(parseFloat(cashAmount) + parseFloat(cardAmount)).toFixed(2)}</p>
+                      <Form.Group controlId="formAmountGivenToCashierSplit">
+                          <Form.Label>Amount Given to Cashier</Form.Label>
+                          <InputGroup className="mb-3">
+                              <FormControl
+                                  type="number"
+                                  placeholder="Enter amount given to cashier"
+                                  value={amountGivenToCashier}
+                                  onChange={(e) => setAmountGivenToCashier(e.target.value)}
+                              />
+                          </InputGroup>
+                      </Form.Group>
+                      <Button variant="primary" type="button" onClick={calculateChange}>
+                        Calculate Change
+                    </Button>
+                    <br /><br />
+                    {change !== null && <p>Change: ${change.toFixed(2)}</p>}
+                  </div>
               )}
               <hr></hr>
               <Form.Group controlId="formRedeemCode">

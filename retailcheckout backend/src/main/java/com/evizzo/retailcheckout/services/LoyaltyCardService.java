@@ -40,13 +40,11 @@ public class LoyaltyCardService {
             return 0;
         }
 
-        double value = (pointsToRedeem / 200) * 15;
+        double redeemableValue = (pointsToRedeem / 200) * 15;
 
-        if (value > totalBillPrice) {
-            value = totalBillPrice;
-        }
+        double finalValue = Math.min(redeemableValue, totalBillPrice);
 
-        double pointsToDeduct = Math.ceil((value / 15) * 200 / 200) * 200;
+        double pointsToDeduct = Math.ceil((finalValue / 15) * 200);
 
         if (pointsToDeduct > availablePoints) {
             pointsToDeduct = availablePoints;
@@ -54,8 +52,6 @@ public class LoyaltyCardService {
 
         card.setPoints(availablePoints - pointsToDeduct);
         loyaltyCardRepository.save(card);
-
-        double finalValue = (pointsToDeduct / 200) * 15;
 
         return finalValue;
     }

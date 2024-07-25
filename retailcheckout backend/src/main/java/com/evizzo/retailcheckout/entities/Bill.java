@@ -34,6 +34,12 @@ public class Bill {
 
     private Double paidWithPoints;
 
+    private double cashAmount;
+
+    private double cardAmount;
+
+    private String codeUsed;
+
     @OneToMany(mappedBy = "bill")
     private List<Article> articles;
 
