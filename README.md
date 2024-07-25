@@ -33,4 +33,3 @@ GET /bill/{billId} - Retrieves a specific bill by its ID (Requires cashier:read 
 POST /auth/authenticate - Authenticates a user with provided credentials
 
 POST /auth/logout - Logs out the currently authenticated user
-
