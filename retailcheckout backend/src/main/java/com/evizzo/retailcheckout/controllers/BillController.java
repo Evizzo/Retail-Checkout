@@ -65,4 +65,34 @@ public class BillController {
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    /**
+     * Refunds a specific article from a bill.
+     *
+     * @param billId The ID of the bill containing the article.
+     * @param articleId The ID of the article to be refunded.
+     * @param request The HTTP request associated with this operation.
+     * @return ResponseEntity containing the updated BillDTO after the refund.
+     */
+    @Transactional
+    @PreAuthorize("hasAuthority('cashier:refund')")
+    @DeleteMapping("/{billId}/article/{articleId}")
+    public ResponseEntity<BillDTO> refundArticle(@PathVariable UUID billId, @PathVariable UUID articleId, HttpServletRequest request) {
+        return ResponseEntity.ok(billService.refundArticle(billId, articleId, request));
+    }
+
+    /**
+     * Cancels a bill, removing it and restocking articles if necessary.
+     *
+     * @param billId The ID of the bill to be canceled.
+     * @param request The HTTP request associated with this operation.
+     * @return ResponseEntity with no content if the cancellation was successful.
+     */
+    @Transactional
+    @PreAuthorize("hasAuthority('cashier:delete')")
+    @DeleteMapping("/{billId}")
+    public ResponseEntity<Void> cancelBill(@PathVariable UUID billId, HttpServletRequest request) {
+        billService.cancelBill(billId, request);
+        return ResponseEntity.noContent().build();
+    }
 }

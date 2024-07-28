@@ -35,6 +35,7 @@ public class BillService {
         bill.setUser(user);
         bill.setDate(LocalDateTime.now());
         bill.setTotalPrice(bill.getTotalPrice() + bill.getPaidWithPoints());
+        bill.setRefundedAmount(0);
 
         if (bill.getPaidBy() == PaymentOptions.CARD){
             bill.setChangeGiven(0.0);
@@ -89,7 +90,7 @@ public class BillService {
     public Optional<BillDTO> findBillById(UUID billId, HttpServletRequest request) {
         Optional<Bill> billOptional = billRepository.findById(billId);
 
-        if (!billOptional.isPresent()) {
+        if (billOptional.isEmpty()) {
             throw new RuntimeException("Bill not found with ID: " + billId);
         }
 
@@ -102,5 +103,56 @@ public class BillService {
         }
 
         return Optional.of(dtoService.convertToDto(bill));
+    }
+
+    public BillDTO refundArticle(UUID billId, UUID articleId, HttpServletRequest request) {
+        UUID userId = jwtService.extractUserIdFromToken(request);
+        Bill bill = billRepository.findById(billId)
+                .orElseThrow(() -> new RuntimeException("Bill not found with ID: " + billId));
+
+        if (!bill.getUser().getUserId().equals(userId)) {
+            throw new RuntimeException("User does not have permission to access this bill");
+        }
+
+        Article article = bill.getArticles().stream()
+                .filter(a -> a.getArticleId().equals(articleId))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Article not found with ID: " + articleId));
+
+        double refundAmount = article.getFullPrice();
+        bill.setTotalPrice(bill.getTotalPrice() - refundAmount);
+        bill.getArticles().remove(article);
+        StoreArticle storeArticle = article.getStoreArticle();
+        storeArticle.setQuantityAvailable(storeArticle.getQuantityAvailable() + article.getQuantity());
+
+        bill.setRefundedAmount(bill.getRefundedAmount() + refundAmount);
+
+        storeArticleService.saveArticle(storeArticle);
+        articleService.deleteArticle(article);
+        billRepository.save(bill);
+
+        return dtoService.convertToDto(bill);
+    }
+
+    public void cancelBill(UUID billId, HttpServletRequest request) {
+        UUID userId = jwtService.extractUserIdFromToken(request);
+        Bill bill = billRepository.findById(billId)
+                .orElseThrow(() -> new RuntimeException("Bill not found with ID: " + billId));
+
+        if (!bill.getUser().getUserId().equals(userId)) {
+            throw new RuntimeException("User does not have permission to access this bill");
+        }
+
+        for (Article article : bill.getArticles()) {
+            StoreArticle storeArticle = article.getStoreArticle();
+            storeArticle.setQuantityAvailable(storeArticle.getQuantityAvailable() + article.getQuantity());
+            storeArticleService.saveArticle(storeArticle);
+        }
+
+        for (Article article : bill.getArticles()) {
+            articleService.deleteArticle(article);
+        }
+
+        billRepository.delete(bill);
     }
 }

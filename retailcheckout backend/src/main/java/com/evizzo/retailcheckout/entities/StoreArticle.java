@@ -20,9 +20,9 @@ public class StoreArticle {
     @Column(unique = true)
     private String articleName;
 
-    private Double price;
+    private double price;
 
-    private Integer quantityAvailable;
+    private int quantityAvailable;
 
     @OneToMany(mappedBy = "storeArticle", cascade = CascadeType.ALL)
     private List<Article> articles;

@@ -28,6 +28,7 @@ interface BillDTO {
   cashAmount: number;
   cardAmount: number;
   codeUsed: string;
+  refundedAmount: number;
 }
 
 const CashierBills: React.FC = () => {
@@ -89,6 +90,7 @@ const CashierBills: React.FC = () => {
             <th onClick={() => requestSort('paidWithPoints')}>Amount paid with points</th>
             <th onClick={() => requestSort('cashAmount')}>CASH</th>
             <th onClick={() => requestSort('cardAmount')}>CARD</th>
+            <th onClick={() => requestSort('refundedAmount')}>Refunded Amount</th>
             <th onClick={() => requestSort('codeUsed')}>Code used</th>
             <th>Articles</th>
           </tr>
@@ -107,6 +109,7 @@ const CashierBills: React.FC = () => {
               <td>{bill.paidWithPoints.toFixed(2)}</td>
               <td>{bill.cashAmount.toFixed(2)}</td>
               <td>{bill.cardAmount.toFixed(2)}</td>
+              <td>{bill.refundedAmount.toFixed(2)}</td>
               <td>{bill.codeUsed}</td>
               <td>
                 <ul>

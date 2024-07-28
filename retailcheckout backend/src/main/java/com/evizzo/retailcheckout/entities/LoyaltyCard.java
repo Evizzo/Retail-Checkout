@@ -27,5 +27,5 @@ public class LoyaltyCard {
     @Column(unique = true)
     private String phonenumber;
 
-    private Double points;
+    private double points;
 }

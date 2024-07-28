@@ -14,5 +14,5 @@ public class LoyaltyCardDTO {
     private String firstname;
     private String lastname;
     private String phonenumber;
-    private Double points;
+    private double points;
 }

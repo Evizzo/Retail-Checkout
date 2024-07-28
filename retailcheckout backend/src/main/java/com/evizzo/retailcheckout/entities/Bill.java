@@ -26,21 +26,23 @@ public class Bill {
     @Enumerated(EnumType.STRING)
     private PaymentOptions paidBy;
 
-    private Double totalPrice;
+    private double totalPrice;
 
-    private Double changeGiven;
+    private double changeGiven;
 
-    private Double amountGivenToCashier;
+    private double amountGivenToCashier;
 
-    private Double paidWithPoints;
+    private double paidWithPoints;
 
     private double cashAmount;
 
     private double cardAmount;
 
+    private double refundedAmount;
+
     private String codeUsed;
 
-    @OneToMany(mappedBy = "bill")
+    @OneToMany(mappedBy = "bill", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Article> articles;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -28,6 +28,10 @@ GET /bill - Retrieves all bills associated with the current user (Requires cashi
 
 GET /bill/{billId} - Retrieves a specific bill by its ID (Requires cashier:read authority)
 
+DELETE /bill/{billId} - Cancels a bill (Requires cashier:delete authority)
+
+POST /bill/{billId}/refund/{articleId} - Refunds a specific article in a bill (Requires cashier:update authority)
+
 ### Authentication
 
 POST /auth/authenticate - Authenticates a user with provided credentials

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Container, Alert, Spinner, Button } from 'react-bootstrap';
-import { executeFindBillById } from '../api/ApiService';
+import { executeFindBillById, executeRefundArticle, executeCancelBill } from '../api/ApiService';
 import { Link } from 'react-router-dom';
 
 function BillDetail() {
@@ -9,6 +9,8 @@ function BillDetail() {
   const [bill, setBill] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionLoading, setActionLoading] = useState<boolean>(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!billId) return;
@@ -26,6 +28,32 @@ function BillDetail() {
 
     fetchBill();
   }, [billId]);
+
+  const handleRefund = async (articleId: string) => {
+    setActionLoading(true);
+    try {
+      await executeRefundArticle(billId, articleId);
+      setBill((prevBill: any) => ({
+        ...prevBill,
+        articles: prevBill.articles.filter((article: any) => article.articleId !== articleId),
+      }));
+      setActionLoading(false);
+    } catch (err) {
+      setError('Failed to refund article. Please try again later.');
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelBill = async () => {
+    setActionLoading(true);
+    try {
+      await executeCancelBill(billId);
+      navigate('/cashiers-bills');
+    } catch (err) {
+      setError('Failed to cancel the bill. Please try again later.');
+      setActionLoading(false);
+    }
+  };
 
   if (!billId) {
     return (
@@ -65,17 +93,38 @@ function BillDetail() {
       <p>Amount paid with points: ${bill.paidWithPoints.toFixed(2)}</p>
       <p>Amount paid with cash: ${bill.cashAmount.toFixed(2)}</p>
       <p>Amount paid with card: ${bill.cardAmount.toFixed(2)}</p>
+      <p>Refunded Amount: ${bill.refundedAmount.toFixed(2)}</p>
       <p>Code used: {bill.codeUsed}</p>
       <h3>Articles</h3>
       <ul>
         {bill.articles.map((article: any) => (
           <li key={article.articleId}>
             <strong>{article.articleName}</strong> (x{article.quantity}): ${article.fullPrice.toFixed(2)}
+            <Button 
+              variant="danger" 
+              size="sm" 
+              onClick={() => handleRefund(article.articleId)}
+              disabled={actionLoading}
+              className="ml-2"
+            >
+              Refund
+            </Button>
           </li>
         ))}
       </ul>
+      <Button 
+        variant="danger" 
+        onClick={handleCancelBill}
+        disabled={actionLoading}
+        className="mt-3"
+      >
+        Cancel Bill
+      </Button>
+      <br></br>
+      <hr></hr>
+      <br></br>
       <Link to="/cashiers-bills">
-        <Button variant="secondary">
+        <Button variant="secondary" className="mt-3 ml-2">
           Go to bills
         </Button>
       </Link>

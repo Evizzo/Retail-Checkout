@@ -36,3 +36,11 @@ export const executeCodeRedeem = (code: string, pointsToRedeem: number, totalBil
 export const executeGetAvailablePoints = (code: string) => {
     return apiClient.get(`/loyalty-card/points?code=${encodeURIComponent(code)}`);
 }
+
+export const executeCancelBill = (billId: any) => {
+    return apiClient.delete(`/bill/${billId}`);
+};
+
+export const executeRefundArticle = (billId: any, articleId: any) => {
+    return apiClient.delete(`/bill/${billId}/article/${articleId}`);
+};

@@ -18,13 +18,14 @@ public class BillDTO {
     private UUID id;
     private LocalDateTime date;
     private PaymentOptions paidBy;
-    private Double totalPrice;
-    private Double changeGiven;
-    private Double amountGivenToCashier;
-    private Double paidWithPoints;
+    private double totalPrice;
+    private double changeGiven;
+    private double amountGivenToCashier;
+    private double paidWithPoints;
     private double cashAmount;
     private double cardAmount;
     private String codeUsed;
+    private double refundedAmount;
     private List<ArticleDTO> articles;
     private UUID userId;
 }

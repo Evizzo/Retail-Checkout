@@ -15,8 +15,8 @@ public class ArticleDTO {
     private UUID articleId;
     private String serialNumber;
     private String articleName;
-    private Integer quantity;
-    private Double pricePerItem;
-    private Double fullPrice;
+    private int quantity;
+    private double pricePerItem;
+    private double fullPrice;
     private UUID billId;
 }

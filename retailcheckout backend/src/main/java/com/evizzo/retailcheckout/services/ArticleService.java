@@ -16,4 +16,8 @@ public class ArticleService {
     public void saveArticles(List<Article> articles) {
         articleRepository.saveAll(articles);
     }
+
+    public void deleteArticle(Article article) {
+        articleRepository.delete(article);
+    }
 }

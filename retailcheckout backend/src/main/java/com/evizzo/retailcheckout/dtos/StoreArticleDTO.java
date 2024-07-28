@@ -12,6 +12,6 @@ import lombok.NoArgsConstructor;
 public class StoreArticleDTO {
     private String serialNumber;
     private String articleName;
-    private Double price;
-    private Integer quantityAvailable;
+    private double price;
+    private int quantityAvailable;
 }
