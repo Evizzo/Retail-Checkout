@@ -82,7 +82,7 @@ public class BillController {
     }
 
     /**
-     * Cancels a bill, removing it and restocking articles if necessary.
+     * Cancels a bill, removing it and restocking articles.
      *
      * @param billId The ID of the bill to be canceled.
      * @param request The HTTP request associated with this operation.
